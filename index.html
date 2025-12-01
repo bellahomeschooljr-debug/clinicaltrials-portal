@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Trials Pharmacy Web Portal</title>
+    <!-- Google Font for jazzed-up header -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- XLSX library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <!-- Chart.js for Trials in Set-up graph -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            margin: 0;
+            padding: 20px 0 40px;
+            text-align: center;
+            /* Softer, more modern background */
+            background:
+                radial-gradient(circle at top left, rgba(0, 94, 184, 0.16), transparent 55%),
+                radial-gradient(circle at bottom right, rgba(0, 169, 0, 0.14), transparent 55%),
+                linear-gradient(to bottom, #f6f9fc, #e8f0f8);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.96);
+            padding: 24px 28px 32px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Header with logo in top-right */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .header-title {
+            flex: 1;
+            text-align: center;
+            /* Reserve space on the right so the title still looks centred with the logo there */
+            margin-right: 160px;
+        }
+
+        .header-title h1 {
+            font-size: 2.2rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #005EB8;
+            text-shadow: 0 3px 6px rgba(0, 94, 184, 0.35);
+        }
+
+        .header-subtitle {
+            margin: 6px 0 0;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #3b4a5a;
+            opacity: 0.8;
+        }
+
+        .logo {
+            width: 150px;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+
+        /* Clinical trials / pharmacy animation banner */
+        .hero-animation {
+            position: relative;
+            height: 110px;
+            margin: 18px auto 8px;
+            max-width: 520px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #005EB8 0%, #0072ce 50%, #00a38f 100%);
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+        }
+
+        .hero-grid {
+            position: absolute;
+            inset: 0;
+            opacity: 0.25;
+            background-image:
+                linear-gradient(to right, rgba(255,255,255,0.4) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.4) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .hero-node {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            background: #ffffff;
+            border: 3px solid #00a38f;
+            box-shadow: 0 0 0 4px rgba(255,255,255,0.3);
+            animation: float 7s ease-in-out infinite;
+        }
+
+        .hero-node::after {
+            content: "";
+            position: absolute;
+            inset: 4px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 30% 30%, #00a38f, #005EB8);
+        }
+
+        .hero-node.n1 { top: 20px; left: 60px; animation-delay: 0s; }
+        .hero-node.n2 { top: 55px; left: 160px; animation-delay: 0.6s; }
+        .hero-node.n3 { top: 24px; left: 260px; animation-delay: 1.2s; }
+        .hero-node.n4 { top: 58px; left: 360px; animation-delay: 1.8s; }
+
+        .hero-connector {
+            position: absolute;
+            height: 3px;
+            border-radius: 999px;
+            background: linear-gradient(to right, rgba(255,255,255,0.2), rgba(255,255,255,0.9), rgba(255,255,255,0.2));
+            opacity: 0.9;
+        }
+
+        .hero-connector.c1 { top: 32px; left: 78px; width: 100px; transform: rotate(10deg); }
+        .hero-connector.c2 { top: 66px; left: 180px; width: 100px; transform: rotate(-8deg); }
+        .hero-connector.c3 { top: 40px; left: 282px; width: 100px; transform: rotate(6deg); }
+
+        .hero-pill {
+            position: absolute;
+            width: 42px;
+            height: 18px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #ffffff, #d7f2ff);
+            border: 2px solid rgba(255,255,255,0.8);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+            overflow: hidden;
+            animation: slide 9s linear infinite;
+        }
+
+        .hero-pill::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: #005EB8;
+        }
+
+        .hero-pill::after {
+            content: "";
+            position: absolute;
+            inset: 3px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.7);
+        }
+
+        .hero-pill.p1 { top: 26px; left: -60px; animation-delay: 0s; }
+        .hero-pill.p2 { top: 60px; left: -120px; animation-delay: 3s; }
+
+        .hero-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .hero-text span {
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #eaf6ff;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes slide {
+            0% { transform: translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateX(620px); opacity: 0; }
+        }
+
+        .button-grid {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .button-container {
+            flex: 1;
+            min-width: 45%;
+            padding: 15px;
+            border: 2px solid #e0e4ea;
+            border-radius: 12px;
+            background: #ffffff;
+            text-align: center;
+            transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .button-container:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+            transform: translateY(-3px);
+            border-color: #005EB8;
+            background: #f6f9ff;
+        }
+
+        .button-container h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #005EB8;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 22px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            background-color: #005EB8;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            text-decoration: none;
+            margin: 5px;
+            transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 4px 10px rgba(0, 94, 184, 0.35);
+        }
+
+        .button:hover {
+            background-color: #004494;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(0, 94, 184, 0.45);
+        }
+
+        .active-trials-container {
+            width: 60%;
+            min-width: 320px;
+            margin: 26px auto 0;
+            padding: 15px;
+            border: 2px solid #e0e4ea;
+            border-radius: 12px;
+            background: #ffffff;
+            text-align: left;
+        }
+
+        .active-trials-container h1 {
+            font-size: 1.4rem;
+            margin-top: 0;
+            color: #005EB8;
+            text-align: center;
+        }
+
+        .filter-container {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .table-container {
+            margin-top: 10px;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #ccc;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #005EB8;
+            color: white;
+        }
+
+        /* Zebra striping and hover for table rows */
+        #csvTable tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        #csvTable tbody tr:hover {
+            background-color: #e6f0fa;
+        }
+
+        #csvTable tbody a {
+            color: #005EB8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        #csvTable tbody a:hover {
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Basic responsiveness */
+        @media (max-width: 768px) {
+            .header-title {
+                margin-right: 0;
+            }
+
+            .logo {
+                position: static;
+                margin-left: auto;
+            }
+
+            .header {
+                flex-direction: column-reverse;
+                gap: 10px;
+            }
+
+            .hero-animation {
+                max-width: 100%;
+            }
+
+            .active-trials-container {
+                width: 100%;
+            }
+
+            .button-container {
+                min-width: 100%;
+            }
+        }
+    </style>
+
+    <meta name="NetsparkQuiltingResult" total-length="18564" removed="0" rules-found="w6877,w3509,w11626,w73,w6193,w2656,w4829,w4830,w6243,w11433,w8931" />
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-title">
+                <h1>Clinical Trials Pharmacy Web Portal</h1>
+                <p class="header-subtitle">UHSussex · Clinical Trials Pharmacy</p>
+            </div>
+            <img src="https://www.uhsussex.nhs.uk/wp-content/themes/karabiner/assets/imgs/logo.svg" alt="NHS Logo" class="logo">
+        </div>
+
+        <!-- Animated clinical trials / pharmacy banner -->
+        <div class="hero-animation" aria-hidden="true">
+            <div class="hero-grid"></div>
+            <div class="hero-node n1"></div>
+            <div class="hero-node n2"></div>
+            <div class="hero-node n3"></div>
+            <div class="hero-node n4"></div>
+            <div class="hero-connector c1"></div>
+            <div class="hero-connector c2"></div>
+            <div class="hero-connector c3"></div>
+            <div class="hero-pill p1"></div>
+            <div class="hero-pill p2"></div>
+            <div class="hero-text">
+                <span>Feasibility · Set-up · Delivery</span>
+            </div>
+        </div>
+
+        <!-- Button Groups -->
+        <div class="button-grid">
+            <div class="button-container">
+                <h2>Feasibility and Set Up Trackers</h2>
+                <a href="https://nhs.sharepoint.com/:x:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/PharmTRACC%20(open%20in%20app).xlsm" class="button" target="_blank">Open PharmTRACC</a>
+                <a href="https://nhs.sharepoint.com/:x:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/PACT-(open%20in%20app)-%20Pharmacy%20Approval%20for%20Clinical%20Trials.xlsm" class="button" target="_blank">Open PACT</a>
+            </div>
+
+            <div class="button-container">
+                <h2>SharePoint Links</h2>
+                <a href="https://nhs.sharepoint.com/:f:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/Active%20Studies" class="button" target="_blank">Active Trials</a>
+                <a href="https://nhs.sharepoint.com/:f:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/SOPs" class="button" target="_blank">SOPs</a>
+                <a href="https://nhs.sharepoint.com/:f:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/Feasibility%20and%20Set-up" class="button" target="_blank">Feasibility &amp; In Set Up</a>
+                <a href="https://nhs.sharepoint.com/:f:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/Forms%20and%20Templates" class="button" target="_blank">Forms &amp; Templates</a>
+                <a href="https://nhs.sharepoint.com/:f:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/Operational" class="button" target="_blank">Operational</a>
+                <a href="https://nhs.sharepoint.com/:f:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/Clinical%20Trials%20Pharmacy%20Staff%20Folders?csf=1&amp;web=1&amp;e=4hmB5s"
+                   class="button" target="_blank">
+                    Staff folders
+                </a>
+            </div>
+
+            <div class="button-container">
+                <h2>Temperature Monitoring</h2>
+                <a href="https://portal.kelsius.com/current/portal/logon.php" class="button" target="_blank">Kelsius</a>
+                <a href="https://monitoring.haierbiomedical.com/auth/login" class="button" target="_blank">Haier UCool+</a>
+            </div>
+
+            <div class="button-container">
+                <h2>Prescribing Systems</h2>
+                <a href="https://jacweblive.wsht.nhs.uk/" class="button" target="_blank">EPMA Wor/SRH</a>
+                <a href="https://cmmweblive.uhsussex.nhs.uk/Account/Login" class="button" target="_blank">EPMA RSCH/PRH</a>
+                <a href="https://chemocare.bsuh.nhs.uk/" class="button" target="_blank">ChemoCare</a>
+                <a href="https://nww.sccancerhub.nhs.uk/Citrix/idesktopARIAWeb/" class="button" target="_blank">ARIA</a>
+            </div>
+        </div>
+
+        <!-- Active Trials Section -->
+        <div class="active-trials-container">
+            <h1>Active Trials</h1>
+
+            <div class="filter-container hidden" id="filterContainer">
+                <button class="button" onclick="filterTable('all')">Show All</button>
+                <button class="button" onclick="filterTable('oncology')">Filter Oncology</button>
+                <button class="button" onclick="filterTable('non-oncology')">Filter Non-oncology</button>
+            </div>
+
+            <div class="table-container">
+                <table id="csvTable">
+                    <thead>
+                        <tr>
+                            <th>Study Name</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data will be appended here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Trials in Set-up: Chart + optional Power BI link -->
+        <div class="active-trials-container" style="margin-top: 26px;">
+            <h1>Trials in Set-up</h1>
+            <p style="font-size: 0.9rem; color: #555; text-align: center; margin-top: -4px; margin-bottom: 8px;">
+                Progress of trials in set-up (from TrialsSetup.xlsx).
+            </p>
+            <div style="margin-top: 10px; height: 380px;">
+                <canvas id="setupProgressChart"></canvas>
+            </div>
+            <p style="font-size: 0.85rem; color: #555; text-align: center; margin-top: 10px;">
+                Need more detail? 
+                <a href="https://app.powerbi.com/groups/me/reports/33028a1f-7a5c-4f73-9094-63ebab6a53a0/12366fae7600143082ac?rs:embed=true"
+                   target="_blank">
+                    Open full Power BI dashboard
+                </a>.
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        let allData = [];
+
+        // URL of the hosted XLSX file on Netlify for Active Trials
+        const trialsXlsxUrl = 'https://clinicaltrialspharmacy.netlify.app/Trials%20list.xlsx';
+
+        // URL of the hosted XLSX file on Netlify for Trials in Set-up progress
+        const setupXlsxUrl = 'https://clinicaltrialspharmacy.netlify.app/TrialsSetup.xlsx';
+
+        // Fetch the XLSX file for Active Trials
+        fetch(trialsXlsxUrl)
+            .then(response => response.arrayBuffer())  // Use arrayBuffer for binary data
+            .then(data => {
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets['Sheet1']; // Specifically reference "Sheet1"
+
+                // Convert the sheet to JSON format
+                allData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                // Display the data
+                displayCSVData("all");
+                document.getElementById("filterContainer").classList.remove("hidden");
+            })
+            .catch(error => {
+                alert("Error fetching XLSX file: " + error);
+                console.error("Error fetching XLSX file:", error);
+            });
+
+        function displayCSVData(filter) {
+            const tableBody = document.getElementById("tableBody");
+            tableBody.innerHTML = "";
+
+            allData.slice(1).forEach(row => {  // Skip the header row by using slice(1)
+                const studyName = row[0];  // Column A (Folder Name)
+                let studyURL = row[1];     // Column B (SharePoint Link)
+                const category = row[2];   // Column C (Oncology category)
+
+                // Skip if studyURL is undefined or empty
+                if (!studyURL) {
+                    console.warn('Missing URL for:', studyName);
+                    return;
+                }
+
+                // Strip extra quotes from the URL
+                studyURL = studyURL.replace(/^"|"$/g, "");
+
+                // Ensure URL starts with 'http' if not already
+                if (studyURL && !studyURL.startsWith("http")) {
+                    studyURL = "https://" + studyURL;
+                }
+
+                // Only show relevant rows based on filter
+                if (filter === "oncology" && category !== "Oncology") return;
+                if (filter === "non-oncology" && category !== "Non-oncology") return;
+
+                const tr = document.createElement("tr");
+                const td = document.createElement("td");
+                const link = document.createElement("a");
+
+                link.href = studyURL;
+                link.textContent = studyName;
+                link.target = "_blank";
+
+                td.appendChild(link);
+                tr.appendChild(td);
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function filterTable(filter) {
+            displayCSVData(filter);
+        }
+
+        // Load Trials in Set-up data and render Chart.js bar chart
+        function loadSetupProgress() {
+            fetch(setupXlsxUrl)
+                .then(response => response.arrayBuffer())
+                .then(data => {
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]]; // first sheet
+                    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                    const labels = [];
+                    const values = [];
+
+                    // Expecting: row[0] = Trial Name, row[1] = Progress (0–100)
+                    rows.slice(1).forEach(row => {
+                        const name = row[0];
+                        const progress = row[1];
+
+                        if (name && progress !== undefined && progress !== null && progress !== '') {
+                            labels.push(String(name));
+                            values.push(Number(progress));
+                        }
+                    });
+
+                    const ctx = document.getElementById('setupProgressChart').getContext('2d');
+
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Progress (%)',
+                                data: values
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y', // horizontal bars
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    ticks: {
+                                        stepSize: 10
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Progress (%)'
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (ctx) {
+                                            return ctx.parsed.x + '%';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error("Error fetching TrialsSetup.xlsx:", error);
+                });
+        }
+
+        // Call it on page load
+        loadSetupProgress();
+    </script>
+
+</body>
+</html>
