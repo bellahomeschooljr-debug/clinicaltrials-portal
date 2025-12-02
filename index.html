@@ -299,7 +299,6 @@
             color: white;
         }
 
-        /* Zebra striping and hover for table rows */
         #csvTable tbody tr:nth-child(even) {
             background-color: #f9f9f9;
         }
@@ -320,6 +319,76 @@
 
         .hidden {
             display: none;
+        }
+
+        /* Modal styles for Trials in Set-up */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border-radius: 16px;
+            width: min(800px, 90%);
+            max-height: 80vh;
+            padding: 20px 24px 24px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .modal-header h1 {
+            font-size: 1.4rem;
+            margin: 0;
+            color: #005EB8;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.4rem;
+            font-weight: 700;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px 8px;
+            color: #555;
+        }
+
+        .modal-close:hover {
+            color: #000;
+        }
+
+        .modal-body {
+            flex: 1;
+            min-height: 260px;
+            max-height: 60vh;
+        }
+
+        .modal-footer {
+            margin-top: 12px;
+            text-align: right;
+        }
+
+        .modal-body canvas {
+            width: 100%;
+            height: 100%;
         }
 
         /* Basic responsiveness */
@@ -389,7 +458,7 @@
                 <a href="https://nhs.sharepoint.com/:x:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/PharmTRACC%20(open%20in%20app).xlsm" class="button" target="_blank">Open PharmTRACC</a>
                 <a href="https://nhs.sharepoint.com/:x:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/PACT-(open%20in%20app)-%20Pharmacy%20Approval%20for%20Clinical%20Trials.xlsm" class="button" target="_blank">Open PACT</a>
 
-                <!-- New button to reveal the Trials in Set-up chart -->
+                <!-- Button to open Trials in Set-up modal -->
                 <button class="button" type="button" onclick="showSetupProgress()">
                     Check set-up progress
                 </button>
@@ -446,16 +515,22 @@
                 </table>
             </div>
         </div>
+    </div>
 
-        <!-- Trials in Set-up: Chart (hidden by default, shown on button click) -->
-        <div class="active-trials-container hidden" id="setupProgressSection" style="margin-top: 26px;">
-            <h1>Trials in Set-up</h1>
-
-            <div style="margin-top: 10px; height: 380px;">
+    <!-- Trials in Set-up Modal -->
+    <div id="setupModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1>Trials in Set-up</h1>
+                <button class="modal-close" type="button" onclick="closeSetupProgress()">×</button>
+            </div>
+            <div class="modal-body">
                 <canvas id="setupProgressChart"></canvas>
             </div>
+            <div class="modal-footer">
+                <button class="button" type="button" onclick="closeSetupProgress()">Close</button>
+            </div>
         </div>
-
     </div>
 
     <script>
@@ -603,21 +678,28 @@
                 });
         }
 
-        // Show the Trials in Set-up section and load the chart on first click
+        // Show the Trials in Set-up modal and load the chart on first click
         function showSetupProgress() {
-            const section = document.getElementById('setupProgressSection');
-            if (!section) return;
+            const modal = document.getElementById('setupModal');
+            if (!modal) return;
 
             if (!setupChartLoaded) {
                 loadSetupProgress();
                 setupChartLoaded = true;
             }
 
-            section.classList.remove('hidden');
-            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            modal.classList.remove('hidden');
+        }
+
+        // Close the Trials in Set-up modal
+        function closeSetupProgress() {
+            const modal = document.getElementById('setupModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
         }
     </script>
 
 </body>
 </html>
+
 
