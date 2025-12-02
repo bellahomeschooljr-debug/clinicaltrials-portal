@@ -388,6 +388,11 @@
                 <h2>Feasibility and Set Up Trackers</h2>
                 <a href="https://nhs.sharepoint.com/:x:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/PharmTRACC%20(open%20in%20app).xlsm" class="button" target="_blank">Open PharmTRACC</a>
                 <a href="https://nhs.sharepoint.com/:x:/r/sites/msteams_6f0de9/Shared%20Documents/Clinical%20Trials%20Pharmacy/PACT-(open%20in%20app)-%20Pharmacy%20Approval%20for%20Clinical%20Trials.xlsm" class="button" target="_blank">Open PACT</a>
+
+                <!-- New button to reveal the Trials in Set-up chart -->
+                <button class="button" type="button" onclick="showSetupProgress()">
+                    Check set-up progress
+                </button>
             </div>
 
             <div class="button-container">
@@ -442,28 +447,20 @@
             </div>
         </div>
 
-        <!-- Trials in Set-up: Chart + optional Power BI link -->
-        <div class="active-trials-container" style="margin-top: 26px;">
+        <!-- Trials in Set-up: Chart (hidden by default, shown on button click) -->
+        <div class="active-trials-container hidden" id="setupProgressSection" style="margin-top: 26px;">
             <h1>Trials in Set-up</h1>
-            <p style="font-size: 0.9rem; color: #555; text-align: center; margin-top: -4px; margin-bottom: 8px;">
-                Progress of trials in set-up (from TrialsSetup.xlsx).
-            </p>
+
             <div style="margin-top: 10px; height: 380px;">
                 <canvas id="setupProgressChart"></canvas>
             </div>
-            <p style="font-size: 0.85rem; color: #555; text-align: center; margin-top: 10px;">
-                Need more detail? 
-                <a href="https://app.powerbi.com/groups/me/reports/33028a1f-7a5c-4f73-9094-63ebab6a53a0/12366fae7600143082ac?rs:embed=true"
-                   target="_blank">
-                    Open full Power BI dashboard
-                </a>.
-            </p>
         </div>
 
     </div>
 
     <script>
         let allData = [];
+        let setupChartLoaded = false;
 
         // URL of the hosted XLSX file on Netlify for Active Trials
         const trialsXlsxUrl = 'https://clinicaltrialspharmacy.netlify.app/Trials%20list.xlsx';
@@ -606,9 +603,21 @@
                 });
         }
 
-        // Call it on page load
-        loadSetupProgress();
+        // Show the Trials in Set-up section and load the chart on first click
+        function showSetupProgress() {
+            const section = document.getElementById('setupProgressSection');
+            if (!section) return;
+
+            if (!setupChartLoaded) {
+                loadSetupProgress();
+                setupChartLoaded = true;
+            }
+
+            section.classList.remove('hidden');
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     </script>
 
 </body>
 </html>
+
