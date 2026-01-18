@@ -538,7 +538,7 @@
 <script>
     let allData = [];
     let setupChartLoaded = false;
-    let setupChartInstance = null; // <-- NEW: prevent stacked charts
+    let setupChartInstance = null; // prevent stacked charts
 
     // URL of the hosted XLSX file on Netlify for Active Trials
     const trialsXlsxUrl = 'https://clinicaltrialspharmacy.netlify.app/Trials%20list.xlsx';
@@ -548,15 +548,13 @@
 
     // Fetch the XLSX file for Active Trials
     fetch(trialsXlsxUrl)
-        .then(response => response.arrayBuffer())  // Use arrayBuffer for binary data
+        .then(response => response.arrayBuffer())
         .then(data => {
             const workbook = XLSX.read(data, { type: 'array' });
-            const sheet = workbook.Sheets['Sheet1']; // Specifically reference "Sheet1"
+            const sheet = workbook.Sheets['Sheet1'];
 
-            // Convert the sheet to JSON format
             allData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-            // Display the data
             displayCSVData("all");
             document.getElementById("filterContainer").classList.remove("hidden");
         })
@@ -569,26 +567,22 @@
         const tableBody = document.getElementById("tableBody");
         tableBody.innerHTML = "";
 
-        allData.slice(1).forEach(row => {  // Skip the header row by using slice(1)
-            const studyName = row[0];  // Column A (Folder Name)
-            let studyURL = row[1];     // Column B (SharePoint Link)
-            const category = row[2];   // Column C (Oncology category)
+        allData.slice(1).forEach(row => {
+            const studyName = row[0];
+            let studyURL = row[1];
+            const category = row[2];
 
-            // Skip if studyURL is undefined or empty
             if (!studyURL) {
                 console.warn('Missing URL for:', studyName);
                 return;
             }
 
-            // Strip extra quotes from the URL
             studyURL = studyURL.replace(/^"|"$/g, "");
 
-            // Ensure URL starts with 'http' if not already
             if (studyURL && !studyURL.startsWith("http")) {
                 studyURL = "https://" + studyURL;
             }
 
-            // Only show relevant rows based on filter
             if (filter === "oncology" && category !== "Oncology") return;
             if (filter === "non-oncology" && category !== "Non-oncology") return;
 
@@ -616,13 +610,10 @@
             .then(response => response.arrayBuffer())
             .then(data => {
                 const workbook = XLSX.read(data, { type: 'array' });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]]; // first sheet
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-                // NEW: defval keeps column positions consistent even with blanks
                 const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
 
-                // NEW: find the header row dynamically (stops "starts at row 5" issues)
-                // Expecting headers: "Trial Name", "Days remaining", "Progress"
                 const headerIdx = rows.findIndex(r =>
                     r &&
                     String(r[0] || '').trim().toLowerCase() === 'trial name' &&
@@ -639,8 +630,6 @@
                 const values = [];
                 const daysArr = [];
 
-                // NEW: read AFTER header row; expect columns:
-                // row[0] = Trial Name, row[1] = Days remaining, row[2] = Progress (0–100)
                 rows.slice(headerIdx + 1).forEach(row => {
                     const name = row[0];
                     const days = row[1];
@@ -655,7 +644,62 @@
 
                 const ctx = document.getElementById('setupProgressChart').getContext('2d');
 
-                // NEW: avoid stacking multiple charts on repeated opens
+                // ---- NEW: draw "XX% · YYd" inside (or just outside) each bar ----
+                const inBarLabelPlugin = {
+                    id: 'inBarLabelPlugin',
+                    afterDatasetsDraw(chart) {
+                        const { ctx } = chart;
+                        const meta = chart.getDatasetMeta(0);
+                        if (!meta || !meta.data) return;
+
+                        ctx.save();
+                        ctx.textBaseline = 'middle';
+                        ctx.font = '600 12px Poppins, Arial, sans-serif';
+
+                        meta.data.forEach((bar, i) => {
+                            const value = chart.data.datasets[0].data[i];
+                            const days = daysArr[i];
+
+                            if (value === null || value === undefined || isNaN(value)) return;
+
+                            const pct = Math.round(Number(value));
+                            const label = (days !== null && days !== undefined && !isNaN(days))
+                                ? `${pct}% · ${Math.round(Number(days))}d`
+                                : `${pct}%`;
+
+                            const props = bar.getProps(['x', 'y', 'base'], true);
+                            const x = props.x;        // bar end
+                            const y = props.y;        // bar center
+                            const base = props.base;  // bar start
+
+                            const barWidth = Math.abs(x - base);
+                            const padding = 6;
+                            const textWidth = ctx.measureText(label).width;
+
+                            let textX;
+                            let fill;
+
+                            if (barWidth > textWidth + padding * 2) {
+                                // inside bar near right edge
+                                textX = x - padding;
+                                ctx.textAlign = 'right';
+                                fill = '#ffffff';
+                            } else {
+                                // outside bar to the right (when the bar is too short)
+                                textX = x + padding;
+                                ctx.textAlign = 'left';
+                                fill = '#333333';
+                            }
+
+                            ctx.fillStyle = fill;
+                            ctx.fillText(label, textX, y);
+                        });
+
+                        ctx.restore();
+                    }
+                };
+                // ----------------------------------------------------------------
+
                 if (setupChartInstance) {
                     setupChartInstance.destroy();
                 }
@@ -670,7 +714,7 @@
                         }]
                     },
                     options: {
-                        indexAxis: 'y', // horizontal bars
+                        indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
@@ -685,17 +729,17 @@
                             legend: { display: false },
                             tooltip: {
                                 callbacks: {
-                                    // NEW: include Days remaining in tooltip
                                     label: function (ctx) {
                                         const p = ctx.parsed.x;
                                         const d = daysArr[ctx.dataIndex];
-                                        if (d === null) return `${p}%`;
+                                        if (d === null || d === undefined || Number.isNaN(d)) return `${p}%`;
                                         return `${p}% (${d} days remaining)`;
                                     }
                                 }
                             }
                         }
-                    }
+                    },
+                    plugins: [inBarLabelPlugin] // <-- NEW: enables labels inside bars
                 });
             })
             .catch(error => {
@@ -703,7 +747,6 @@
             });
     }
 
-    // Show the Trials in Set-up modal and load the chart on first click
     function showSetupProgress() {
         const modal = document.getElementById('setupModal');
         if (!modal) return;
@@ -716,7 +759,6 @@
         modal.classList.remove('hidden');
     }
 
-    // Close the Trials in Set-up modal
     function closeSetupProgress() {
         const modal = document.getElementById('setupModal');
         if (!modal) return;
